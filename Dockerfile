@@ -1,4 +1,6 @@
 FROM openjdk:latest
-ADD target/docker-spring-boot.jar docker-spring-boot.jar
+RUN mkdir -p /app
+WORKDIR /app
+COPY . .
 EXPOSE 8085
-ENTRYPOINT [ "java", "-jar", "docker-spring-boot.jar" ]
+ENTRYPOINT ["java", "-jar", "./target/springbootapp.jar"] 
