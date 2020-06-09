@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -30,10 +31,54 @@ public class UserController {
 
     // Validate info and register a user!
     @PostMapping(value = "/register", produces = {"application/json"})
-    public RedirectView addUser(User user) {
-        // System.out.println(user);
+    public ModelAndView addUser(User user, @RequestParam("repeatedPassword") String repPassword) 
+    {
+        // Block for checking if the user with the entered username already exists
+        // If user exists then return an error and don't even continue validating the input parameters and don't
+        // save the old inputed data (because the user already exists)
+        User fuser = repo.findByUsername(user.getUsername());
+        if(fuser != null)
+        {
+            ModelAndView mv = new ModelAndView("register.jsp");
+            String error = "User '" + user.getUsername() + "' already exists!";
+            mv.addObject("error", error);
+            return mv;
+        }
+
+
+        ModelAndView mv = new ModelAndView("register.jsp");
+        StringBuilder stringBuilder = new StringBuilder();
+
+        // ErrorMessageGenerators
+        if(user.getUsername() == "")
+            stringBuilder.append("Username is empty!<br>");
+
+        if(user.getPassword() == "")
+            stringBuilder.append("Password is empty!<br>");
+
+        if(!user.getPassword().equals(repPassword))
+            stringBuilder.append("Password and repeated password does not match!");
+
+        // If stringBuilder is not empty (there are some error) create modelview objects and return the modelandview
+        if(!stringBuilder.toString().equals(""))
+        {
+            mv.addObject("error", stringBuilder.toString());
+
+            // These two lines are for saving input data so after failed attempt the old data would be automatically saved
+            // so it a user doesn't have to input all the info again
+            mv.addObject("oldUsername", user.getUsername());
+            mv.addObject("oldPassword", user.getPassword());
+
+            return mv;
+        }
+
         repo.save(user);
-        return new RedirectView("/login");
+
+        /// CREATE SUCCESS fake PAGE that notifies about successful registration and redirects to /login! ///
+
+        return new ModelAndView(new RedirectView("/login"));
+        // return new ModelAndView("login.jsp"); // old (only sent a view, url was still /register and not /login after the registration)
+        // return new ModelAndView("/login"); // auto login?
     }
 
     // Return a login page
@@ -51,12 +96,13 @@ public class UserController {
     {
         HttpSession session = req.getSession();
         User foundUser = repo.findByUsername(user.getUsername());
-        // System.out.println(foundUser);
-        if(foundUser == null)
+        
+        if(foundUser == null) // if the user does not exist
         {
             ModelAndView mv = new ModelAndView("login.jsp");
             String error = "User doesn't exist!";
             mv.addObject("error", error);
+            mv.addObject("oldUsername", user.getUsername());
             return mv;
         }
         else
@@ -73,6 +119,7 @@ public class UserController {
                 ModelAndView mv = new ModelAndView("login.jsp");
                 String error = "Incorrect password!";
                 mv.addObject("error", error);
+                mv.addObject("oldUsername", user.getUsername());
                 return mv;
             }
         }
