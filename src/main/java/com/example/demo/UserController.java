@@ -75,8 +75,10 @@ public class UserController {
         repo.save(user);
 
         /// CREATE SUCCESS fake PAGE that notifies about successful registration and redirects to /login! ///
+        return new ModelAndView("fakeRegistrationSuccess.jsp");
 
-        return new ModelAndView(new RedirectView("/login"));
+        // return new ModelAndView(new RedirectView("/login")); // Good for redirecting to login after registration but no Success message after the reg
+
         // return new ModelAndView("login.jsp"); // old (only sent a view, url was still /register and not /login after the registration)
         // return new ModelAndView("/login"); // auto login?
     }
